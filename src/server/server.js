@@ -37,8 +37,8 @@ function onRequest(req, res) {
             }
         });
 
-    } else if( pathname === '/first_person_camera.js') {
-        fs.readFile("../client/first_person_camera.js", function(err, data) {
+    } else if( pathname === '/controller.js') {
+        fs.readFile("../client/controller.js", function(err, data) {
             if(err) {
                 res.writeHead(404, {"Content-Type":"text/html"});
                 res.end();
@@ -70,12 +70,56 @@ function onRequest(req, res) {
 
 var server = http.createServer(onRequest);
 
+/* Player data */
+var players = [];
+function Player(id) {
+    this.id = id;
+    this.x = 0;
+    this.y = 0;
+    this.z = 0;
+    this.beta = 0;
+
+}
+
 server.listen(8080);
 
 var socket_io = io.listen(server);
 socket_io.sockets.on('connection', function(socket) {
     console.log("Client connected.");
-    socket.emit('message', {"message":"GG, WP"});
+    //socket.emit('message', {"message":"GG, WP"});
+
+    socket.on('initialize', function() {
+        if( players.length <= 4 ) {
+            var playerId = players.length;
+            console.log("playerId:", playerId);
+            var newPlayer = new Player(playerId);
+            switch(playerId) {
+            case 0:
+                newPlayer.x = 6;
+                newPlayer.z = 6;
+                newPlayer.beta = 45;
+                break;
+            case 1:
+                newPlayer.x = -6;
+                newPlayer.z = -6;
+                newPlayer.beta = 225;
+                break;
+            case 2:
+                newPlayer.x = 6;
+                newPlayer.z = -6;
+                newPlayer.beta = 135;
+                break;
+            case 3:
+                newPlayer.x = -6;
+                newPlayer.z = 6;
+                newPlayer.beta = 315;
+                break;
+            }
+            players.push(newPlayer);
+            socket.emit('playerData', {id: playerId, players: players});
+        }
+        //socket.broadcast.emit('playerJoined', newPlayer);
+    });
 });
 
 console.log("Server started.");

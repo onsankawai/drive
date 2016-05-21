@@ -40,7 +40,8 @@ pc.script.create('controller', function (app) {
                 this.entity.rigidbody.applyTorque(0, -300, 0);
             }
 
-            //console.log("x:", p.x, "\ty:", p.y, "\tz:", p.z);
+            var p = this.entity.getLocalEulerAngles();
+            console.log("x:", p.x, "\ty:", p.y, "\tz:", p.z);
         },
 
         onMouseMove: function (event) {

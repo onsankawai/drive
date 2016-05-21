@@ -23,7 +23,7 @@ app.scene.ambientLight = new pc.Color(0.2, 0.2, 0.2);
 
 
 //Physics - gravity
-//app.systems.rigidbody.setGravity(0, -9.8, 0);
+app.systems.rigidbody.setGravity(0, -9.8, 0);
 
 // ***********    Helper functions    *******************
 function createMaterial (color) {
@@ -46,31 +46,43 @@ function createBox (position, size, material) {
     box.setLocalPosition(position);
     box.setLocalScale(size);
 
-
-    // add the box to the hierarchy
-    //app.root.addChild(box);
     return box;
 }
-// ***********    Create Boxes    *******************
+
+function applyPhysics(box, rType, rFriction, rMass, rRest) {
+    box.addComponent("rigidbody", {
+        type: rType,
+        friction: rFriction,
+        mass: rMass,
+        angularDamping: 0.8,
+        restitution: rRest
+    });
+
+    scale = box.getLocalScale();
+    box.addComponent("collision", {
+        type: "box",
+        halfExtents: new pc.Vec3(scale.x/2, scale.y/2, scale.z/2)
+    });
+    
+}
+
+function createPlayer(player) {
+    var playerEntity = createBox(new pc.Vec3(player.x, player.y, player.z),
+        new pc.Vec3(1, 1, 2), red);
+    console.log("x:", player.x, "\ty:", player.y , "\tz:", player.z);
+
+    playerEntity.setLocalEulerAngles(0, player.beta, 0);
+    applyPhysics(playerEntity, "dynamic", 0.5, 50, 0);
+    return playerEntity;
+}
+
 // create a few materials for our boxes
 var red = createMaterial(new pc.Color(1,0,0));
 var white = createMaterial(new pc.Color(1,1,1));
 
 // create a floor
-var floor = createBox(new pc.Vec3(0, -0.5, 0), new pc.Vec3(10, 0.1, 10), white);
-// add a rigidbody component so that other objects collide with it
-floor.addComponent("rigidbody", {
-    type: "static",
-    friction: 1,
-    restitution: 0
-});
-// add a collision component
-floor.addComponent("collision", {
-    type: "box",
-    halfExtents: new pc.Vec3(5, 0.05, 5)
-});
-
-
+var floor = createBox(new pc.Vec3(0, -0.1, 0), new pc.Vec3(20, 0.1, 20), white);
+applyPhysics(floor, "static", 0.5, 0, 0);
 app.root.addChild(floor);
 
 // ***********    Create lights   *******************
@@ -96,36 +108,48 @@ camera.addComponent("camera", {
     farClip: 30
 });
 
-//camera.setEulerAngles(-15, 0, 0);
 camera.setName("camera");
-//camera.setLocalPosition(0, 2, 5);
+camera.translateLocal(0, 2, 3);
 
-var rectBox = createBox(pc.Vec3.ZERO, new pc.Vec3(1, 1, 2), red);
-//camera.addChild(rectBox);
 
-// add physics
-rectBox.addComponent("rigidbody", {
-    type: "dynamic",
-    friction: 1,
-    mass: 50,
-    restitution: 0
-});
+/*** socket.io testing ***/
+var socket = io();
+socket.emit('initialize');
+var player;
+var players = [];
 
-rectBox.addComponent("collision", {
-    type: "box",
-    halfExtents: new pc.Vec3(0.5, 0.5, 1)
+socket.on('playerData', function(data) {
+    console.log("id:", data.id, "\tplayer.x:", data.players[0].x);
+    players = data.players;
+    var myId = data.id;
+
+    for(i = 0; i < players.length; i++) {
+        players[i].entity = createPlayer(data.players[i]);
+        if( i === myId ) {
+            player = players[i];
+            players[i].entity.addChild(camera);
+            players[i].entity.addComponent("script", {
+                scripts: [{
+                    url: 'controller.js'
+                }]
+            });
+        }
+        app.root.addChild(players[i].entity);      
+    }
 });
 
 // add the first_person_camera script to the camera
-rectBox.addComponent("script", {
+/*
+templateBox.addComponent("script", {
     scripts: [{
-        url: 'first_person_camera.js'
+        url: 'controller.js'
     }]
 });
+*/
+/**** Other boxes ****/
+//var box1 = createBox(new pc.Vec3(0, 0, -2), pc.Vec3.ONE, red);
+//applyPhysics(box1, "dynamic", 0.5, 50, 0);
 
-rectBox.addChild(camera);
+//app.root.addChild(templateBox);
+//app.root.addChild(box1);
 
-// add the camera to the hierarchy
-app.root.addChild(rectBox);
-// Move the camera a little further away
-camera.translateLocal(0, 2, 3);
