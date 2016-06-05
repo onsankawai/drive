@@ -1,3 +1,4 @@
+// nodejs packages
 var http = require('http');
 var url = require('url');
 var io = require('socket.io');
@@ -84,6 +85,7 @@ function Player(id) {
 server.listen(8080);
 
 var socket_io = io.listen(server);
+/*
 socket_io.sockets.on('connection', function(socket) {
     console.log("Client connected.");
     //socket.emit('message', {"message":"GG, WP"});
@@ -116,10 +118,17 @@ socket_io.sockets.on('connection', function(socket) {
                 break;
             }
             players.push(newPlayer);
+            
             socket.emit('playerData', {id: playerId, players: players});
+
+            socket.broadcast.emit('playerJoined', newPlayer);
         }
-        //socket.broadcast.emit('playerJoined', newPlayer);
     });
 });
+*/
 
+// game server packages
+var browser = require('./browser');
+browser.start(socket_io);
 console.log("Server started.");
+

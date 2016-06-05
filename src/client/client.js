@@ -23,7 +23,7 @@ app.scene.ambientLight = new pc.Color(0.2, 0.2, 0.2);
 
 
 //Physics - gravity
-app.systems.rigidbody.setGravity(0, -9.8, 0);
+//app.systems.rigidbody.setGravity(0, -9.8, 0);
 
 // ***********    Helper functions    *******************
 function createMaterial (color) {
@@ -72,7 +72,7 @@ function createPlayer(player) {
     console.log("x:", player.x, "\ty:", player.y , "\tz:", player.z);
 
     playerEntity.setLocalEulerAngles(0, player.beta, 0);
-    applyPhysics(playerEntity, "dynamic", 0.5, 50, 0);
+    //applyPhysics(playerEntity, "dynamic", 0.5, 50, 0);
     return playerEntity;
 }
 
@@ -82,7 +82,7 @@ var white = createMaterial(new pc.Color(1,1,1));
 
 // create a floor
 var floor = createBox(new pc.Vec3(0, -0.1, 0), new pc.Vec3(20, 0.1, 20), white);
-applyPhysics(floor, "static", 0.5, 0, 0);
+//applyPhysics(floor, "static", 0.5, 0, 0);
 app.root.addChild(floor);
 
 // ***********    Create lights   *******************
@@ -115,13 +115,14 @@ camera.translateLocal(0, 2, 3);
 /*** socket.io testing ***/
 var socket = io();
 socket.emit('initialize');
+app.socket = socket;
 var player;
 var players = [];
 
 socket.on('playerData', function(data) {
-    console.log("id:", data.id, "\tplayer.x:", data.players[0].x);
     players = data.players;
     var myId = data.id;
+    app.playerId = data.id;
 
     for(i = 0; i < players.length; i++) {
         players[i].entity = createPlayer(data.players[i]);
@@ -138,18 +139,17 @@ socket.on('playerData', function(data) {
     }
 });
 
-// add the first_person_camera script to the camera
-/*
-templateBox.addComponent("script", {
-    scripts: [{
-        url: 'controller.js'
-    }]
+socket.on('playerJoined', function(newPlayer) {
+    players.push(newPlayer);
+    players[players.length-1].entity = createPlayer(newPlayer);
+    app.root.addChild(players[players.length-1].entity);
+
 });
-*/
-/**** Other boxes ****/
-//var box1 = createBox(new pc.Vec3(0, 0, -2), pc.Vec3.ONE, red);
-//applyPhysics(box1, "dynamic", 0.5, 50, 0);
 
-//app.root.addChild(templateBox);
-//app.root.addChild(box1);
+socket.on('positionUpdate', function(data) {
+    for(i = 0; i < players.length; i++) {
+        players[i].entity.setPosition(data[i].x, data[i].y, data[i].z);
+        players[i].entity.setEulerAngles(data[i].alpha, data[i].beta, data[i].gamma);
+    }
 
+});
